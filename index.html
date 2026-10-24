@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>TaskPay Pro - Earn Daily Micro Rewards</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- SweetAlert2 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+  <!-- Tailwind Custom Setup -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+          colors: {
+            brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { background-color: #0b1120; -webkit-tap-highlight-color: transparent; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .glass-nav {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .modal-enter {
+      animation: enterModal 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    @keyframes enterModal {
+      from { opacity: 0; transform: translateY(18px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+  </style>
+
+  <!-- Firebase Compat SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+</head>
+
+<body class="font-sans antialiased flex justify-center min-h-screen text-slate-800">
+
+  <!-- Main Mobile App Shell -->
+  <div id="app-root" class="w-full max-w-md bg-slate-50 min-h-screen shadow-2xl relative flex flex-col pb-24 overflow-x-hidden border-x border-slate-200/50">
+
+    <!-- ========================================== -->
+    <!-- 1. SPLASH SCREEN                           -->
+    <!-- ========================================== -->
+    <div id="splash-view" class="fixed inset-0 max-w-md mx-auto z-50 bg-gradient-to-tr from-brand-700 via-brand-600 to-purple-700 flex flex-col items-center justify-center text-white transition-opacity duration-500">
+      <div class="relative flex items-center justify-center mb-5">
+        <div class="w-20 h-20 bg-white/20 rounded-3xl animate-ping absolute"></div>
+        <div class="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center text-brand-600 text-3xl">
+          <i class="fa-solid fa-coins"></i>
+        </div>
+      </div>
+      <h1 class="text-3xl font-black tracking-tight">TaskPay <span class="text-emerald-400">Pro</span></h1>
+      <p class="text-indigo-200 text-xs mt-1.5 font-medium tracking-wide">Daily Micro Income Platform</p>
+      
+      <div class="mt-8 flex space-x-2">
+        <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-bounce"></span>
+        <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+        <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 2. AUTH VIEW (LOGIN / REGISTER)            -->
+    <!-- ========================================== -->
+    <div id="auth-view" class="hidden flex-1 px-6 py-8 flex flex-col justify-center bg-white">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 bg-gradient-to-tr from-brand-600 to-purple-600 rounded-2xl mx-auto flex items-center justify-center text-white text-2xl shadow-lg shadow-indigo-100">
+          <i class="fa-solid fa-sack-dollar"></i>
+        </div>
+        <h2 id="auth-title" class="text-2xl font-bold text-slate-800 mt-4">Welcome Back!</h2>
+        <p id="auth-subtitle" class="text-xs text-slate-400 mt-1">Sign in with your phone & password</p>
+      </div>
+
+      <form id="auth-form" class="space-y-3.5" onsubmit="handleAuthSubmit(event)">
+        <!-- Registration: Full Name -->
+        <div id="field-fullname" class="hidden">
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Full Name</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-regular fa-user"></i></span>
+            <input type="text" id="reg-name" placeholder="John Doe" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+        </div>
+
+        <!-- Phone Input -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Phone Number</label>
+          <div class="flex">
+            <select id="auth-country-code" class="px-2.5 py-2.5 rounded-l-xl border border-r-0 border-slate-200 bg-slate-100 text-slate-700 text-xs font-semibold focus:outline-none">
+              <option value="+1" selected>🇺🇸 +1</option>
+              <option value="+880">🇧🇩 +880</option>
+              <option value="+91">🇮🇳 +91</option>
+              <option value="+44">🇬🇧 +44</option>
+              <option value="+92">🇵🇰 +92</option>
+              <option value="+971">🇦🇪 +971</option>
+            </select>
+            <input type="tel" id="auth-phone" required placeholder="1712345678" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-r-xl text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+        </div>
+
+        <!-- Password Input -->
+        <div>
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" id="auth-password" required placeholder="••••••••" class="w-full pl-9 pr-9 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+            <button type="button" onclick="togglePassVisibility('auth-password', this)" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+              <i class="fa-regular fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Registration: Confirm Password -->
+        <div id="field-confirm-pass" class="hidden">
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Confirm Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-shield-halved"></i></span>
+            <input type="password" id="reg-confirm-password" placeholder="••••••••" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+        </div>
+
+        <!-- Registration: Referral Code -->
+        <div id="field-referral" class="hidden">
+          <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-500 mb-1">Referral Code (Optional)</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-gift"></i></span>
+            <input type="text" id="reg-referral" placeholder="TP123456" class="w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs uppercase focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+        </div>
+
+        <!-- Registration: Terms -->
+        <div id="field-terms" class="hidden items-center text-xs text-slate-600">
+          <input type="checkbox" id="reg-terms" class="rounded border-slate-300 text-brand-600 mr-2 focus:ring-0" />
+          <label for="reg-terms">I agree to the <a href="javascript:void(0)" onclick="openLegalModal('terms')" class="text-brand-600 underline">Terms of Service</a></label>
+        </div>
+
+        <button type="submit" id="auth-btn" class="w-full py-3 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-700 hover:to-purple-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-100 flex items-center justify-center space-x-1.5 transition active:scale-95">
+          <span id="auth-btn-text">Sign In</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      </form>
+
+      <div class="text-center mt-5">
+        <p id="auth-switch-msg" class="text-xs text-slate-500">
+          Don't have an account? 
+          <a href="javascript:void(0)" onclick="setAuthMode('register')" class="text-brand-600 font-bold hover:underline">Create Account</a>
+        </p>
+      </div>
+
+      <div class="mt-6 bg-slate-50 p-3 rounded-xl border border-slate-100 text-center text-[11px] text-slate-500">
+        <span class="font-bold text-slate-700"><i class="fa-solid fa-key text-amber-500 mr-1"></i> Admin Master Passcode:</span> 
+        <strong class="text-brand-600 font-mono">admin75b21</strong>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- 3. TOP APP HEADER                          -->
+    <!-- ========================================== -->
+    <header id="top-header" class="hidden px-5 pt-4 pb-3 bg-white border-b border-slate-100 sticky top-0 z-30 flex items-center justify-between">
+      <div class="flex items-center space-x-3 cursor-pointer" onclick="navigate('profile')">
+        <div class="relative">
+          <img id="head-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" class="w-9 h-9 rounded-full border-2 border-brand-500 object-cover" />
+          <span class="w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full absolute bottom-0 right-0"></span>
+        </div>
+        <div>
+          <span class="text-[10px] text-slate-400 font-bold block uppercase tracking-wide">Welcome,</span>
+          <span id="head-name" class="text-xs font-black text-slate-800 truncate max-w-[130px] block">User</span>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button onclick="showQuickNotif()" class="w-8 h-8 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center relative hover:bg-slate-200 transition">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span class="w-2 h-2 bg-rose-500 rounded-full absolute top-1.5 right-1.5 ring-2 ring-white"></span>
+        </button>
+        <button onclick="promptAdminModal()" title="Admin Controls" class="w-8 h-8 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition">
+          <i class="fa-solid fa-shield-halved text-xs"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================== -->
+    <!-- 4. MAIN CONTENT ROUTER                     -->
+    <!-- ========================================== -->
+    <main id="main-content" class="hidden flex-1 overflow-y-auto px-5 py-4">
+
+      <!-- ================= TAB 1: HOME ================= -->
+      <section id="view-home" class="space-y-5">
+        <!-- Balance Card -->
+        <div class="rounded-3xl p-5 bg-gradient-to-br from-brand-600 via-indigo-600 to-purple-700 text-white shadow-xl shadow-indigo-100/50 relative overflow-hidden">
+          <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+          
+          <div class="flex justify-between items-start">
+            <div>
+              <span class="text-[10px] uppercase font-bold tracking-wider text-indigo-200">Available Balance</span>
+              <div class="text-3xl font-extrabold mt-0.5 tracking-tight">$<span id="w-balance">0.00</span></div>
+            </div>
+            <button onclick="navigate('history')" class="bg-white/20 hover:bg-white/30 backdrop-blur-md px-3 py-1.5 rounded-xl text-[11px] font-bold text-white transition active:scale-95">
+              Withdraw <i class="fa-solid fa-arrow-up-right-from-square text-[9px] ml-1"></i>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-3 gap-2 mt-5 pt-3.5 border-t border-white/15 text-center">
+            <div>
+              <div class="text-[10px] text-indigo-200">Total Earned</div>
+              <div class="text-xs font-bold mt-0.5">$<span id="w-total">0.00</span></div>
+            </div>
+            <div class="border-x border-white/10">
+              <div class="text-[10px] text-indigo-200">Pending</div>
+              <div class="text-xs font-bold text-amber-300 mt-0.5">$<span id="w-pending">0.00</span></div>
+            </div>
+            <div>
+              <div class="text-[10px] text-indigo-200">Completed</div>
+              <div class="text-xs font-bold text-emerald-300 mt-0.5"><span id="w-completed">0</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Categories Grid -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-extrabold text-slate-800">Categories</h3>
+            <span class="text-[10px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full">Fast Pay</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <!-- Gmail -->
+            <div onclick="filterCategoryTasks('Gmail')" class="bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-red-200 shadow-sm cursor-pointer transition active:scale-95 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <div class="w-9 h-9 rounded-xl bg-red-50 text-red-500 flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-envelope"></i>
+                </div>
+                <span class="text-[10px] font-bold text-red-600 px-2 py-0.5 rounded-full bg-red-50" id="cat-badge-gmail">0 Tasks</span>
+              </div>
+              <div class="mt-3">
+                <h4 class="font-bold text-xs text-slate-800">Gmail Tasks</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Reviews & signups</p>
+                <div class="mt-2 text-[10px] font-bold text-red-600 flex justify-between items-center">
+                  <span>Earn up to $1.50</span>
+                  <i class="fa-solid fa-chevron-right text-[8px]"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Facebook -->
+            <div onclick="filterCategoryTasks('Facebook')" class="bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-blue-200 shadow-sm cursor-pointer transition active:scale-95 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-sm">
+                  <i class="fa-brands fa-facebook"></i>
+                </div>
+                <span class="text-[10px] font-bold text-blue-600 px-2 py-0.5 rounded-full bg-blue-50" id="cat-badge-facebook">0 Tasks</span>
+              </div>
+              <div class="mt-3">
+                <h4 class="font-bold text-xs text-slate-800">Facebook Tasks</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Likes & post shares</p>
+                <div class="mt-2 text-[10px] font-bold text-blue-600 flex justify-between items-center">
+                  <span>Earn up to $0.85</span>
+                  <i class="fa-solid fa-chevron-right text-[8px]"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Instagram -->
+            <div onclick="filterCategoryTasks('Instagram')" class="bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-pink-200 shadow-sm cursor-pointer transition active:scale-95 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <div class="w-9 h-9 rounded-xl bg-pink-50 text-pink-500 flex items-center justify-center text-sm">
+                  <i class="fa-brands fa-instagram"></i>
+                </div>
+                <span class="text-[10px] font-bold text-pink-600 px-2 py-0.5 rounded-full bg-pink-50" id="cat-badge-instagram">0 Tasks</span>
+              </div>
+              <div class="mt-3">
+                <h4 class="font-bold text-xs text-slate-800">Instagram Tasks</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Follows & reels engage</p>
+                <div class="mt-2 text-[10px] font-bold text-pink-600 flex justify-between items-center">
+                  <span>Earn up to $1.10</span>
+                  <i class="fa-solid fa-chevron-right text-[8px]"></i>
+                </div>
+              </div>
+            </div>
+
+            <!-- Other Online -->
+            <div onclick="filterCategoryTasks('Other')" class="bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-emerald-200 shadow-sm cursor-pointer transition active:scale-95 flex flex-col justify-between">
+              <div class="flex items-center justify-between">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm">
+                  <i class="fa-solid fa-globe"></i>
+                </div>
+                <span class="text-[10px] font-bold text-emerald-600 px-2 py-0.5 rounded-full bg-emerald-50" id="cat-badge-other">0 Tasks</span>
+              </div>
+              <div class="mt-3">
+                <h4 class="font-bold text-xs text-slate-800">Other Tasks</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Surveys & web tests</p>
+                <div class="mt-2 text-[10px] font-bold text-emerald-600 flex justify-between items-center">
+                  <span>Earn up to $2.50</span>
+                  <i class="fa-solid fa-chevron-right text-[8px]"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task Feed -->
+        <div>
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-extrabold text-slate-800">Available Feed</h3>
+            <span class="text-[11px] text-slate-400">High Payout</span>
+          </div>
+          <div id="home-tasks-container" class="space-y-2.5">
+            <div class="text-center py-6 text-slate-400 text-xs">Loading available tasks...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 2: INVITE ================= -->
+      <section id="view-invite" class="hidden space-y-5">
+        <div class="bg-gradient-to-tr from-purple-600 to-indigo-700 rounded-3xl p-5 text-white text-center shadow-lg">
+          <div class="w-14 h-14 bg-white/20 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3">
+            <i class="fa-solid fa-gift"></i>
+          </div>
+          <h3 class="text-lg font-black">Invite Friends & Earn 15%</h3>
+          <p class="text-[11px] text-purple-200 mt-0.5 max-w-xs mx-auto">Share your referral link with peers and earn commission on every verified micro-task they finish!</p>
+
+          <div class="mt-5 bg-white rounded-2xl p-2.5 flex items-center justify-between text-slate-800">
+            <div class="text-left pl-2">
+              <span class="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Your Code</span>
+              <div id="invite-code-text" class="text-sm font-black text-brand-600 tracking-wider">LOADING</div>
+            </div>
+            <button onclick="copyMyInviteCode()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold transition flex items-center space-x-1 active:scale-95">
+              <i class="fa-regular fa-copy text-xs"></i>
+              <span>Copy</span>
+            </button>
+          </div>
+
+          <button onclick="shareInviteLink()" class="w-full mt-3 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center space-x-1.5 active:scale-95">
+            <i class="fa-solid fa-share-nodes"></i>
+            <span>Share Referral Link</span>
+          </button>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2.5 text-center">
+          <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm">
+            <span class="text-[9px] uppercase font-bold text-slate-400">Invited</span>
+            <div id="stat-invited" class="text-base font-extrabold text-slate-800 mt-0.5">0</div>
+          </div>
+          <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm">
+            <span class="text-[9px] uppercase font-bold text-slate-400">Active</span>
+            <div id="stat-active" class="text-base font-extrabold text-emerald-600 mt-0.5">0</div>
+          </div>
+          <div class="bg-white border border-slate-100 p-3 rounded-2xl shadow-sm">
+            <span class="text-[9px] uppercase font-bold text-slate-400">Bonus</span>
+            <div id="stat-commission" class="text-base font-extrabold text-brand-600 mt-0.5">$0.00</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 3: WALLET & HISTORY ================= -->
+      <section id="view-history" class="hidden space-y-4">
+        <div class="bg-slate-900 rounded-3xl p-5 text-white flex flex-col justify-between shadow-xl">
+          <div class="flex justify-between items-center">
+            <div>
+              <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Wallet Balance</span>
+              <div class="text-2xl font-black mt-0.5">$<span id="w-balance-sub">0.00</span></div>
+            </div>
+            <button onclick="openModal('modal-withdraw')" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-xs font-bold transition active:scale-95 shadow-lg shadow-emerald-500/20">
+              Request Payout
+            </button>
+          </div>
+          <div class="mt-4 pt-3 border-t border-slate-800 flex justify-between text-[11px] text-slate-400">
+            <span>Minimum: <strong class="text-white">$5.00</strong></span>
+            <span>Fee: <strong class="text-white">0%</strong></span>
+            <span>Processing: <strong class="text-emerald-400">~24h</strong></span>
+          </div>
+        </div>
+
+        <div class="flex bg-slate-200/60 p-1 rounded-xl text-xs font-bold">
+          <button id="htab-subm" onclick="switchHistoryTab('subm')" class="flex-1 py-2 rounded-lg bg-white shadow-sm text-brand-600 transition">Task Proofs</button>
+          <button id="htab-with" onclick="switchHistoryTab('with')" class="flex-1 py-2 rounded-lg text-slate-500 transition">Withdrawals</button>
+        </div>
+
+        <div id="history-subm-container" class="space-y-2.5">
+          <div class="text-center py-6 text-slate-400 text-xs">Loading task records...</div>
+        </div>
+
+        <div id="history-with-container" class="hidden space-y-2.5">
+          <div class="text-center py-6 text-slate-400 text-xs">Loading payout records...</div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 4: PROFILE ================= -->
+      <section id="view-profile" class="hidden space-y-4">
+        <div class="bg-white border border-slate-100 rounded-3xl p-5 text-center shadow-sm">
+          <div class="relative w-20 h-20 mx-auto">
+            <img id="prof-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop" class="w-20 h-20 rounded-full border-4 border-indigo-100 object-cover shadow" />
+            <label for="prof-file-input" class="absolute bottom-0 right-0 w-7 h-7 bg-brand-600 hover:bg-brand-700 text-white rounded-full flex items-center justify-center cursor-pointer shadow active:scale-95">
+              <i class="fa-solid fa-camera text-[10px]"></i>
+              <input type="file" id="prof-file-input" accept="image/*" class="hidden" onchange="uploadAvatarImage(event)" />
+            </label>
+          </div>
+
+          <h3 id="prof-name" class="text-sm font-black text-slate-800 mt-3">User</h3>
+          <p id="prof-phone" class="text-xs text-slate-400 font-medium">+1 000-0000</p>
+
+          <div class="mt-3 flex items-center justify-center space-x-2">
+            <span class="px-2.5 py-0.5 bg-emerald-50 text-emerald-600 text-[10px] font-bold rounded-full border border-emerald-100">
+              <i class="fa-solid fa-check mr-1"></i> Verified Earner
+            </span>
+            <span id="prof-uid-badge" class="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-mono rounded-full">
+              UID: ...
+            </span>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-100 shadow-sm text-xs">
+          <div onclick="changeDisplayName()" class="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center space-x-3 text-slate-700">
+              <i class="fa-regular fa-user text-brand-600 text-sm"></i>
+              <span class="font-medium">Edit Full Name</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-300"></i>
+          </div>
+
+          <div onclick="promptAdminModal()" class="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center space-x-3 text-slate-700">
+              <i class="fa-solid fa-screwdriver-wrench text-amber-500 text-sm"></i>
+              <span class="font-medium">Admin Dashboard</span>
+            </div>
+            <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">Owner</span>
+          </div>
+
+          <div onclick="logoutUser()" class="px-4 py-3.5 flex items-center justify-between hover:bg-rose-50 cursor-pointer text-rose-600 font-bold transition">
+            <div class="flex items-center space-x-3">
+              <i class="fa-solid fa-arrow-right-from-bracket text-sm"></i>
+              <span>Log Out</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TAB 5: MORE & INFO ================= -->
+      <section id="view-more" class="hidden space-y-4">
+        <h3 class="text-sm font-extrabold text-slate-800">Support & Policies</h3>
+        <div class="bg-white border border-slate-100 rounded-2xl divide-y divide-slate-100 shadow-sm text-xs">
+          <div onclick="openLegalModal('faq')" class="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center space-x-3 text-slate-700">
+              <i class="fa-solid fa-circle-question text-emerald-600"></i>
+              <span class="font-medium">Frequently Asked Questions</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-300"></i>
+          </div>
+
+          <div onclick="openLegalModal('support')" class="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center space-x-3 text-slate-700">
+              <i class="fa-solid fa-headset text-brand-600"></i>
+              <span class="font-medium">24/7 Support Desk</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-300"></i>
+          </div>
+
+          <div onclick="openLegalModal('terms')" class="px-4 py-3.5 flex items-center justify-between hover:bg-slate-50 cursor-pointer transition">
+            <div class="flex items-center space-x-3 text-slate-700">
+              <i class="fa-solid fa-file-contract text-blue-600"></i>
+              <span class="font-medium">Terms of Service</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-slate-300"></i>
+          </div>
+        </div>
+
+        <div class="text-center text-[10px] text-slate-400 pt-4">
+          <p>TaskPay Pro v2.6.0</p>
+          <p class="mt-0.5 font-mono">nicely-75b21.firebaseapp.com</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- 5. BOTTOM NAVIGATION BAR                   -->
+    <!-- ========================================== -->
+    <nav id="bottom-bar" class="hidden fixed bottom-0 max-w-md w-full glass-nav border-t border-slate-200/80 px-2 py-2 flex justify-around items-center z-40">
+      <button onclick="navigate('home')" id="nav-home" class="flex flex-col items-center py-1 px-3 text-brand-600 transition">
+        <i class="fa-solid fa-house text-base"></i>
+        <span class="text-[9px] font-bold mt-1">Home</span>
+      </button>
+
+      <button onclick="navigate('invite')" id="nav-invite" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-brand-600 transition">
+        <i class="fa-solid fa-user-plus text-base"></i>
+        <span class="text-[9px] font-medium mt-1">Invite</span>
+      </button>
+
+      <button onclick="navigate('history')" id="nav-history" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-brand-600 transition">
+        <i class="fa-solid fa-wallet text-base"></i>
+        <span class="text-[9px] font-medium mt-1">Wallet</span>
+      </button>
+
+      <button onclick="navigate('profile')" id="nav-profile" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-brand-600 transition">
+        <i class="fa-regular fa-user text-base"></i>
+        <span class="text-[9px] font-medium mt-1">Profile</span>
+      </button>
+
+      <button onclick="navigate('more')" id="nav-more" class="flex flex-col items-center py-1 px-3 text-slate-400 hover:text-brand-600 transition">
+        <i class="fa-solid fa-bars text-base"></i>
+        <span class="text-[9px] font-medium mt-1">More</span>
+      </button>
+    </nav>
+
+    <!-- ========================================== -->
+    <!-- 6. MODALS                                  -->
+    <!-- ========================================== -->
+
+    <!-- Category Tasks Modal -->
+    <div id="modal-cat-tasks" onclick="if(event.target === this) closeModal('modal-cat-tasks')" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col modal-enter overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <h3 id="modal-cat-title" class="text-xs font-black text-slate-800">Category Tasks</h3>
+          <button onclick="closeModal('modal-cat-tasks')" class="w-7 h-7 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div id="modal-cat-body" class="p-4 overflow-y-auto space-y-2.5 flex-1"></div>
+      </div>
+    </div>
+
+    <!-- Task Detail & Proof Submit Modal -->
+    <div id="modal-task-detail" onclick="if(event.target === this) closeModal('modal-task-detail')" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col modal-enter overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span id="dt-category" class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-brand-50 text-brand-600 uppercase">Task</span>
+            <span id="dt-reward" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">+$0.50</span>
+          </div>
+          <button onclick="closeModal('modal-task-detail')" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="p-5 overflow-y-auto space-y-4 flex-1 text-slate-700">
+          <div>
+            <h3 id="dt-title" class="text-sm font-bold text-slate-800">Task Title</h3>
+            <p id="dt-desc" class="text-[11px] text-slate-400 mt-0.5">Carefully follow all steps to ensure prompt payout approval.</p>
+          </div>
+
+          <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block mb-1">Instructions:</span>
+            <div id="dt-instructions" class="text-xs text-slate-600 whitespace-pre-line leading-relaxed"></div>
+          </div>
+
+          <a id="dt-link" href="#" target="_blank" rel="noopener noreferrer" class="w-full py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 font-bold rounded-xl text-xs flex items-center justify-center space-x-1.5 transition">
+            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+            <span>1. Open Target Task Link</span>
+          </a>
+
+          <form id="proof-submit-form" onsubmit="submitTaskProof(event)" class="space-y-3 pt-2 border-t border-slate-100">
+            <input type="hidden" id="subm-task-id" />
+            <input type="hidden" id="subm-task-reward" />
+
+            <div>
+              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">2. Remarks / Handle / Details</label>
+              <textarea id="subm-text" required rows="2" placeholder="e.g. Subscribed with @myprofile username" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Upload Screenshot Proof (Optional)</label>
+              <input type="file" id="subm-file" accept="image/*" class="w-full text-xs text-slate-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-[10px] file:font-semibold file:bg-brand-50 file:text-brand-700" />
+            </div>
+
+            <button type="submit" id="subm-btn" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1 active:scale-95">
+              <i class="fa-solid fa-paper-plane mr-1"></i>
+              <span>Submit Proof for Review</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Cashout Modal -->
+    <div id="modal-withdraw" onclick="if(event.target === this) closeModal('modal-withdraw')" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col modal-enter overflow-hidden">
+        <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+          <h3 class="text-xs font-black text-slate-800">Cashout Earnings</h3>
+          <button onclick="closeModal('modal-withdraw')" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <form onsubmit="submitWithdrawal(event)" class="p-5 space-y-3.5">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Payment Method</label>
+            <select id="wd-method" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-brand-500">
+              <option value="bKash">bKash (Personal)</option>
+              <option value="Nagad">Nagad (Personal)</option>
+              <option value="Rocket">Rocket</option>
+              <option value="UPI">UPI / Paytm</option>
+              <option value="PayPal">PayPal (USD)</option>
+              <option value="USDT">Binance USDT (TRC20)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Account Number / Wallet Address</label>
+            <input type="text" id="wd-account" required placeholder="017xxxxxxxx or wallet address" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Amount ($ USD, Minimum $5.00)</label>
+            <input type="number" step="0.01" min="5" id="wd-amount" required placeholder="5.00" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-brand-500" />
+          </div>
+
+          <button type="submit" id="wd-btn" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs shadow-md transition active:scale-95">
+            Submit Payout Request
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="modal-admin" onclick="if(event.target === this) closeModal('modal-admin')" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-2">
+      <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-2xl max-h-[92vh] flex flex-col modal-enter overflow-hidden shadow-2xl">
+        <div class="p-3.5 bg-slate-900 text-white flex items-center justify-between">
+          <div class="flex items-center space-x-2">
+            <span class="w-6 h-6 rounded-lg bg-amber-500 text-slate-900 flex items-center justify-center font-bold text-xs"><i class="fa-solid fa-crown"></i></span>
+            <span class="text-xs font-bold text-amber-400 tracking-wide uppercase">TaskPay Admin Console</span>
+          </div>
+          <button onclick="closeModal('modal-admin')" class="text-slate-400 hover:text-white text-xs"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="flex bg-slate-100 border-b border-slate-200 text-xs font-bold text-slate-600">
+          <button onclick="switchAdminTab('subms')" id="atab-subms" class="flex-1 py-2 text-brand-600 border-b-2 border-brand-600 bg-white">Proofs</button>
+          <button onclick="switchAdminTab('withs')" id="atab-withs" class="flex-1 py-2">Withdrawals</button>
+          <button onclick="switchAdminTab('new')" id="atab-new" class="flex-1 py-2">Add Task</button>
+          <button onclick="switchAdminTab('seed')" id="atab-seed" class="flex-1 py-2 text-emerald-600">Seed Demo</button>
+        </div>
+
+        <div class="p-4 overflow-y-auto space-y-3 flex-1 bg-slate-50 text-xs">
+          <!-- Submissions View -->
+          <div id="asec-subms" class="space-y-2.5">
+            <div id="admin-subms-list" class="space-y-2"></div>
+          </div>
+
+          <!-- Withdrawals View -->
+          <div id="asec-withs" class="hidden space-y-2.5">
+            <div id="admin-withs-list" class="space-y-2"></div>
+          </div>
+
+          <!-- Add Task Form -->
+          <form id="asec-new" onsubmit="createAdminTask(event)" class="hidden space-y-2.5 bg-white p-4 rounded-xl border border-slate-200">
+            <div>
+              <label class="block font-bold text-slate-500 mb-0.5">Category</label>
+              <select id="ad-cat" class="w-full p-2 border border-slate-200 rounded-lg">
+                <option value="Gmail">Gmail Tasks</option>
+                <option value="Facebook">Facebook Tasks</option>
+                <option value="Instagram">Instagram Tasks</option>
+                <option value="Other">Other Tasks</option>
+              </select>
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-0.5">Task Title</label>
+              <input type="text" id="ad-title" required placeholder="e.g. Subscribe to YouTube Channel" class="w-full p-2 border border-slate-200 rounded-lg" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-0.5">Reward ($ USD)</label>
+              <input type="number" step="0.01" min="0.05" id="ad-reward" required placeholder="0.50" class="w-full p-2 border border-slate-200 rounded-lg" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-0.5">Target Link</label>
+              <input type="url" id="ad-link" required placeholder="https://..." class="w-full p-2 border border-slate-200 rounded-lg" />
+            </div>
+            <div>
+              <label class="block font-bold text-slate-500 mb-0.5">Instructions</label>
+              <textarea id="ad-instructions" rows="2" required placeholder="1. Follow account&#10;2. Upload screenshot" class="w-full p-2 border border-slate-200 rounded-lg"></textarea>
+            </div>
+            <button type="submit" class="w-full py-2 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg transition">Publish Task</button>
+          </form>
+
+          <!-- Quick Seed -->
+          <div id="asec-seed" class="hidden space-y-3 bg-white p-4 rounded-xl border border-slate-200 text-center">
+            <h4 class="font-bold text-slate-800">Seed 8 Ready Tasks</h4>
+            <p class="text-slate-400 text-xs">Instantly load tasks across all four categories into your Firestore database.</p>
+            <button onclick="seedDatabaseTasks()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition">
+              <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Seed Tasks Now
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Legal & Info Modal -->
+    <div id="modal-legal" onclick="if(event.target === this) closeModal('modal-legal')" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-sm rounded-3xl p-5 modal-enter space-y-3 text-slate-700">
+        <div class="flex justify-between items-center border-b border-slate-100 pb-2">
+          <h3 id="legal-title" class="text-xs font-black text-slate-800">Information</h3>
+          <button onclick="closeModal('modal-legal')" class="text-slate-400"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="legal-body" class="text-xs text-slate-600 max-h-72 overflow-y-auto space-y-2 leading-relaxed"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- 7. APPLICATION LOGIC                       -->
+  <!-- ========================================== -->
+  <script>
+    // Exact Firebase Project Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDu5H3J1Ai3T29yM4_T7fPNk3TbT3DTkaI",
+      authDomain: "nicely-75b21.firebaseapp.com",
+      databaseURL: "https://nicely-75b21-default-rtdb.firebaseio.com",
+      projectId: "nicely-75b21",
+      storageBucket: "nicely-75b21.firebasestorage.app",
+      messagingSenderId: "755756759281",
+      appId: "1:755756759281:android:f1ccea536f4c14e4b2d150"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentAuthMode = 'login';
+    let allTasks = [];
+    let unsubUserDoc = null;
+
+    // Helper: Normalize phone to internal pseudo-email
+    function normalizePhoneAuth(rawPhone, code) {
+      let digits = rawPhone.replace(/\D/g, '');
+      if (digits.startsWith('0')) digits = digits.slice(1);
+      const full = code.replace(/\D/g, '') + digits;
+      return {
+        formattedPhone: code + digits,
+        email: `phone_${full}@nicely.internal`
+      };
+    }
+
+    // Helper: Format timestamps
+    function formatTime(ts) {
+      if (!ts) return 'Just now';
+      const date = ts.toDate ? ts.toDate() : new Date(ts);
+      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    // App Initialization
+    window.addEventListener('DOMContentLoaded', () => {
+      setTimeout(() => {
+        const splash = document.getElementById('splash-view');
+        splash.classList.add('opacity-0', 'pointer-events-none');
+        setTimeout(() => splash.classList.add('hidden'), 500);
+      }, 1000);
+
+      auth.onAuthStateChanged(async (user) => {
+        if (user) {
+          currentUser = user;
+          bindUserDoc(user.uid);
+          showAppInterface();
+          listenToTasks();
+        } else {
+          if (unsubUserDoc) unsubUserDoc();
+          currentUser = null;
+          currentUserData = null;
+          showAuthInterface();
+        }
+      });
+    });
+
+    // Navigation Switcher
+    function navigate(tabId) {
+      const tabs = ['home', 'invite', 'history', 'profile', 'more'];
+      tabs.forEach(t => {
+        const view = document.getElementById(`view-${t}`);
+        const btn = document.getElementById(`nav-${t}`);
+        if (t === tabId) {
+          view.classList.remove('hidden');
+          btn.classList.add('text-brand-600');
+          btn.classList.remove('text-slate-400');
+        } else {
+          view.classList.add('hidden');
+          btn.classList.remove('text-brand-600');
+          btn.classList.add('text-slate-400');
+        }
+      });
+
+      if (tabId === 'history') loadHistoryData();
+    }
+
+    function showAuthInterface() {
+      document.getElementById('auth-view').classList.remove('hidden');
+      document.getElementById('top-header').classList.add('hidden');
+      document.getElementById('main-content').classList.add('hidden');
+      document.getElementById('bottom-bar').classList.add('hidden');
+    }
+
+    function showAppInterface() {
+      document.getElementById('auth-view').classList.add('hidden');
+      document.getElementById('top-header').classList.remove('hidden');
+      document.getElementById('main-content').classList.remove('hidden');
+      document.getElementById('bottom-bar').classList.remove('hidden');
+      navigate('home');
+    }
+
+    function setAuthMode(mode) {
+      currentAuthMode = mode;
+      const title = document.getElementById('auth-title');
+      const sub = document.getElementById('auth-subtitle');
+      const btnText = document.getElementById('auth-btn-text');
+      const switchMsg = document.getElementById('auth-switch-msg');
+
+      if (mode === 'register') {
+        title.innerText = "Create Account";
+        sub.innerText = "Start earning with daily micro tasks";
+        btnText.innerText = "Register Now";
+        document.getElementById('field-fullname').classList.remove('hidden');
+        document.getElementById('field-confirm-pass').classList.remove('hidden');
+        document.getElementById('field-referral').classList.remove('hidden');
+        document.getElementById('field-terms').classList.remove('hidden');
+        document.getElementById('field-terms').classList.add('flex');
+        switchMsg.innerHTML = `Already registered? <a href="javascript:void(0)" onclick="setAuthMode('login')" class="text-brand-600 font-bold hover:underline">Sign In</a>`;
+      } else {
+        title.innerText = "Welcome Back!";
+        sub.innerText = "Sign in with your phone & password";
+        btnText.innerText = "Sign In";
+        document.getElementById('field-fullname').classList.add('hidden');
+        document.getElementById('field-confirm-pass').classList.add('hidden');
+        document.getElementById('field-referral').classList.add('hidden');
+        document.getElementById('field-terms').classList.add('hidden');
+        document.getElementById('field-terms').classList.remove('flex');
+        switchMsg.innerHTML = `Don't have an account? <a href="javascript:void(0)" onclick="setAuthMode('register')" class="text-brand-600 font-bold hover:underline">Create Account</a>`;
+      }
+    }
+
+    function togglePassVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-regular fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-regular fa-eye';
+      }
+    }
+
+    // Authentication Handlers
+    async function handleAuthSubmit(e) {
+      e.preventDefault();
+      const code = document.getElementById('auth-country-code').value;
+      const rawPhone = document.getElementById('auth-phone').value.trim();
+      const password = document.getElementById('auth-password').value;
+      const btn = document.getElementById('auth-btn');
+
+      if (!rawPhone || rawPhone.length < 6) {
+        Swal.fire('Invalid Phone', 'Please provide a valid phone number.', 'warning');
+        return;
+      }
+
+      const { formattedPhone, email } = normalizePhoneAuth(rawPhone, code);
+      btn.disabled = true;
+      btn.classList.add('opacity-75');
+
+      try {
+        if (currentAuthMode === 'register') {
+          const name = document.getElementById('reg-name').value.trim() || 'Earner';
+          const conf = document.getElementById('reg-confirm-password').value;
+          const ref = document.getElementById('reg-referral').value.trim().toUpperCase();
+          const terms = document.getElementById('reg-terms').checked;
+
+          if (!terms) {
+            Swal.fire('Terms Required', 'You must agree to the Terms of Service to register.', 'warning');
+            btn.disabled = false;
+            return;
+          }
+          if (password !== conf) {
+            Swal.fire('Password Mismatch', 'Your passwords do not match.', 'error');
+            btn.disabled = false;
+            return;
+          }
+
+          const cred = await auth.createUserWithEmailAndPassword(email, password);
+          const uid = cred.user.uid;
+          const myRefCode = 'TP' + Math.floor(100000 + Math.random() * 900000);
+
+          await db.collection('users').doc(uid).set({
+            uid: uid,
+            phone: formattedPhone,
+            fullName: name,
+            avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
+            balance: 0.00,
+            totalEarned: 0.00,
+            pendingEarnings: 0.00,
+            completedTasks: 0,
+            referralCode: myRefCode,
+            referredBy: ref || null,
+            referralEarnings: 0.00,
+            invitedCount: 0,
+            isAdmin: false,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          // Reward Inviter
+          if (ref) {
+            const refSnap = await db.collection('users').where('referralCode', '==', ref).get();
+            if (!refSnap.empty) {
+              await db.collection('users').doc(refSnap.docs[0].id).update({
+                invitedCount: firebase.firestore.FieldValue.increment(1)
+              });
+            }
+          }
+        } else {
+          await auth.signInWithEmailAndPassword(email, password);
+        }
+      } catch (err) {
+        let msg = err.message;
+        if (err.code === 'auth/email-already-in-use') msg = 'This phone number is already registered. Please sign in.';
+        if (err.code === 'auth/wrong-password') msg = 'Incorrect password.';
+        if (err.code === 'auth/user-not-found') msg = 'No account found matching this phone number.';
+        Swal.fire('Authentication Error', msg, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-75');
+      }
+    }
+
+    async function logoutUser() {
+      const res = await Swal.fire({
+        title: 'Sign Out?',
+        text: 'Are you sure you want to log out of TaskPay?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5'
+      });
+      if (res.isConfirmed) {
+        await auth.signOut();
+      }
+    }
+
+    // Bind User Profile Snapshot
+    function bindUserDoc(uid) {
+      if (unsubUserDoc) unsubUserDoc();
+      unsubUserDoc = db.collection('users').doc(uid).onSnapshot(doc => {
+        if (!doc.exists) return;
+        currentUserData = doc.data();
+
+        const bal = (currentUserData.balance || 0).toFixed(2);
+        document.getElementById('w-balance').innerText = bal;
+        document.getElementById('w-balance-sub').innerText = bal;
+        document.getElementById('w-total').innerText = (currentUserData.totalEarned || 0).toFixed(2);
+        document.getElementById('w-pending').innerText = (currentUserData.pendingEarnings || 0).toFixed(2);
+        document.getElementById('w-completed').innerText = currentUserData.completedTasks || 0;
+
+        document.getElementById('head-name').innerText = currentUserData.fullName || 'Earner';
+        document.getElementById('prof-name').innerText = currentUserData.fullName || 'Earner';
+        document.getElementById('prof-phone').innerText = currentUserData.phone || '';
+        document.getElementById('prof-uid-badge').innerText = `UID: ${uid.substring(0, 6)}...`;
+        document.getElementById('invite-code-text').innerText = currentUserData.referralCode || 'TASK123';
+        document.getElementById('stat-invited').innerText = currentUserData.invitedCount || 0;
+        document.getElementById('stat-active').innerText = Math.floor((currentUserData.invitedCount || 0) * 0.7);
+        document.getElementById('stat-commission').innerText = `$${(currentUserData.referralEarnings || 0).toFixed(2)}`;
+
+        if (currentUserData.avatarUrl) {
+          document.getElementById('head-avatar').src = currentUserData.avatarUrl;
+          document.getElementById('prof-avatar').src = currentUserData.avatarUrl;
+        }
+      });
+    }
+
+    // Tasks Realtime Stream
+    function listenToTasks() {
+      db.collection('tasks').orderBy('createdAt', 'desc').onSnapshot(snap => {
+        allTasks = [];
+        snap.forEach(d => allTasks.push({ id: d.id, ...d.data() }));
+
+        document.getElementById('cat-badge-gmail').innerText = `${allTasks.filter(t => t.category === 'Gmail').length} Tasks`;
+        document.getElementById('cat-badge-facebook').innerText = `${allTasks.filter(t => t.category === 'Facebook').length} Tasks`;
+        document.getElementById('cat-badge-instagram').innerText = `${allTasks.filter(t => t.category === 'Instagram').length} Tasks`;
+        document.getElementById('cat-badge-other').innerText = `${allTasks.filter(t => t.category === 'Other').length} Tasks`;
+
+        renderHomeTasks();
+      }, err => {
+        console.warn('Firestore tasks listener warning:', err.message);
+      });
+    }
+
+    function renderHomeTasks() {
+      const container = document.getElementById('home-tasks-container');
+      if (!allTasks.length) {
+        container.innerHTML = `
+          <div class="bg-white border border-slate-100 rounded-2xl p-6 text-center shadow-sm">
+            <i class="fa-solid fa-list-check text-slate-300 text-3xl mb-2"></i>
+            <p class="text-xs text-slate-400">No active tasks right now.</p>
+            <button onclick="promptAdminModal()" class="text-xs font-bold text-brand-600 mt-2 hover:underline">Click to Seed Demo Tasks</button>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = allTasks.map(t => {
+        let iconBg = 'bg-brand-50 text-brand-600';
+        let icon = 'fa-solid fa-globe';
+        if (t.category === 'Gmail') { iconBg = 'bg-red-50 text-red-500'; icon = 'fa-solid fa-envelope'; }
+        if (t.category === 'Facebook') { iconBg = 'bg-blue-50 text-blue-600'; icon = 'fa-brands fa-facebook'; }
+        if (t.category === 'Instagram') { iconBg = 'bg-pink-50 text-pink-500'; icon = 'fa-brands fa-instagram'; }
+
+        return `
+          <div onclick="openTaskModal('${t.id}')" class="bg-white p-3.5 rounded-2xl border border-slate-100 hover:border-brand-200 shadow-sm flex items-center justify-between cursor-pointer transition active:scale-[0.99]">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl flex items-center justify-center text-sm ${iconBg}">
+                <i class="${icon}"></i>
+              </div>
+              <div>
+                <h5 class="text-xs font-bold text-slate-800 line-clamp-1">${t.title}</h5>
+                <span class="text-[10px] text-slate-400">${t.category} • Fast Review</span>
+              </div>
+            </div>
+            <div class="text-right flex flex-col items-end">
+              <span class="text-xs font-black text-emerald-600">+$${Number(t.reward).toFixed(2)}</span>
+              <span class="mt-1 px-2.5 py-0.5 bg-brand-50 text-brand-600 rounded-lg text-[9px] font-bold">Start</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterCategoryTasks(cat) {
+      const filtered = allTasks.filter(t => t.category === cat);
+      document.getElementById('modal-cat-title').innerText = `${cat} Tasks`;
+      const body = document.getElementById('modal-cat-body');
+
+      if (!filtered.length) {
+        body.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No active tasks in this category.</div>`;
+      } else {
+        body.innerHTML = filtered.map(t => `
+          <div onclick="openTaskModal('${t.id}'); closeModal('modal-cat-tasks');" class="bg-slate-50 hover:bg-slate-100 p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between cursor-pointer transition">
+            <div class="pr-2">
+              <h5 class="text-xs font-bold text-slate-800">${t.title}</h5>
+              <p class="text-[10px] text-slate-400 line-clamp-1 mt-0.5">${t.instructions}</p>
+            </div>
+            <span class="text-xs font-black text-emerald-600 whitespace-nowrap">+$${Number(t.reward).toFixed(2)}</span>
+          </div>
+        `).join('');
+      }
+
+      openModal('modal-cat-tasks');
+    }
+
+    function openTaskModal(taskId) {
+      const task = allTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      document.getElementById('dt-category').innerText = task.category;
+      document.getElementById('dt-reward').innerText = `+$${Number(task.reward).toFixed(2)}`;
+      document.getElementById('dt-title').innerText = task.title;
+      document.getElementById('dt-instructions').innerText = task.instructions;
+      document.getElementById('dt-link').href = task.link || '#';
+      document.getElementById('subm-task-id').value = task.id;
+      document.getElementById('subm-task-reward').value = task.reward;
+
+      openModal('modal-task-detail');
+    }
+
+    async function submitTaskProof(e) {
+      e.preventDefault();
+      const taskId = document.getElementById('subm-task-id').value;
+      const reward = parseFloat(document.getElementById('subm-task-reward').value);
+      const text = document.getElementById('subm-text').value.trim();
+      const fileInput = document.getElementById('subm-file');
+      const btn = document.getElementById('subm-btn');
+
+      const task = allTasks.find(t => t.id === taskId);
+      btn.disabled = true;
+      btn.innerText = "Submitting proof...";
+
+      try {
+        const exist = await db.collection('taskSubmissions')
+          .where('userId', '==', currentUser.uid)
+          .where('taskId', '==', taskId)
+          .get();
+
+        if (!exist.empty) {
+          Swal.fire('Notice', 'You have already submitted proof for this task.', 'info');
+          btn.disabled = false;
+          btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-1"></i> Submit Proof for Review`;
+          return;
+        }
+
+        let fileUrl = null;
+        if (fileInput.files.length) {
+          const file = fileInput.files[0];
+          try {
+            const fileRef = storage.ref(`proofs/${currentUser.uid}_${Date.now()}_${file.name}`);
+            const snap = await fileRef.put(file);
+            fileUrl = await snap.ref.getDownloadURL();
+          } catch (stErr) {
+            console.warn('Storage fallback triggered:', stErr.message);
+          }
+        }
+
+        await db.collection('taskSubmissions').add({
+          taskId: taskId,
+          taskTitle: task ? task.title : 'Micro Task',
+          reward: reward,
+          userId: currentUser.uid,
+          userName: currentUserData.fullName,
+          userPhone: currentUserData.phone,
+          proofText: text,
+          fileUrl: fileUrl,
+          status: 'Under Review',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        await db.collection('users').doc(currentUser.uid).update({
+          pendingEarnings: firebase.firestore.FieldValue.increment(reward)
+        });
+
+        closeModal('modal-task-detail');
+        document.getElementById('proof-submit-form').reset();
+        Swal.fire('Submitted!', 'Task proof submitted. Reward will be added once approved.', 'success');
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-1"></i> Submit Proof for Review`;
+      }
+    }
+
+    // Cashout Logic
+    async function submitWithdrawal(e) {
+      e.preventDefault();
+      const method = document.getElementById('wd-method').value;
+      const account = document.getElementById('wd-account').value.trim();
+      const amount = parseFloat(document.getElementById('wd-amount').value);
+
+      if (amount < 5.0) {
+        Swal.fire('Minimum Payout', 'The minimum withdrawal is $5.00', 'warning');
+        return;
+      }
+      if (amount > (currentUserData.balance || 0)) {
+        Swal.fire('Insufficient Funds', 'Your available balance is insufficient.', 'error');
+        return;
+      }
+
+      const btn = document.getElementById('wd-btn');
+      btn.disabled = true;
+
+      try {
+        const userRef = db.collection('users').doc(currentUser.uid);
+        await db.runTransaction(async (t) => {
+          const snap = await t.get(userRef);
+          const currentBal = snap.data().balance || 0;
+          if (currentBal < amount) throw new Error("Insufficient balance");
+          t.update(userRef, { balance: currentBal - amount });
+        });
+
+        await db.collection('withdrawalRequests').add({
+          userId: currentUser.uid,
+          userName: currentUserData.fullName,
+          userPhone: currentUserData.phone,
+          method: method,
+          accountNumber: account,
+          amount: amount,
+          status: 'Pending',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+
+        closeModal('modal-withdraw');
+        Swal.fire('Requested', 'Your cashout request was submitted and is under review.', 'success');
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // History Loader
+    function switchHistoryTab(tab) {
+      const btnSub = document.getElementById('htab-subm');
+      const btnWit = document.getElementById('htab-with');
+      const boxSub = document.getElementById('history-subm-container');
+      const boxWit = document.getElementById('history-with-container');
+
+      if (tab === 'subm') {
+        btnSub.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-brand-600 transition";
+        btnWit.className = "flex-1 py-2 rounded-lg text-slate-500 transition";
+        boxSub.classList.remove('hidden');
+        boxWit.classList.add('hidden');
+      } else {
+        btnWit.className = "flex-1 py-2 rounded-lg bg-white shadow-sm text-brand-600 transition";
+        btnSub.className = "flex-1 py-2 rounded-lg text-slate-500 transition";
+        boxWit.classList.remove('hidden');
+        boxSub.classList.add('hidden');
+      }
+    }
+
+    async function loadHistoryData() {
+      if (!currentUser) return;
+      const subBox = document.getElementById('history-subm-container');
+      const withBox = document.getElementById('history-with-container');
+
+      // Submissions
+      const sSnap = await db.collection('taskSubmissions')
+        .where('userId', '==', currentUser.uid)
+        .get();
+
+      if (sSnap.empty) {
+        subBox.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No task submissions recorded.</div>`;
+      } else {
+        subBox.innerHTML = sSnap.docs.map(doc => {
+          const d = doc.data();
+          const badge = d.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' :
+                        d.status === 'Rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600';
+          return `
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+              <div>
+                <h5 class="text-xs font-bold text-slate-800">${d.taskTitle}</h5>
+                <span class="text-[10px] text-slate-400">${d.proofText ? d.proofText.slice(0, 25) + '...' : 'Proof filed'} • ${formatTime(d.createdAt)}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-black text-slate-800">+$${Number(d.reward).toFixed(2)}</span>
+                <span class="block text-[9px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${badge}">${d.status}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Withdrawals
+      const wSnap = await db.collection('withdrawalRequests')
+        .where('userId', '==', currentUser.uid)
+        .get();
+
+      if (wSnap.empty) {
+        withBox.innerHTML = `<div class="p-6 text-center text-xs text-slate-400">No payouts recorded yet.</div>`;
+      } else {
+        withBox.innerHTML = wSnap.docs.map(doc => {
+          const d = doc.data();
+          const badge = d.status === 'Approved' ? 'bg-emerald-50 text-emerald-600' :
+                        d.status === 'Rejected' ? 'bg-rose-50 text-rose-600' : 'bg-amber-50 text-amber-600';
+          return `
+            <div class="bg-white p-3.5 rounded-2xl border border-slate-100 flex items-center justify-between shadow-sm">
+              <div>
+                <h5 class="text-xs font-bold text-slate-800">${d.method}: ${d.accountNumber}</h5>
+                <span class="text-[10px] text-slate-400">${formatTime(d.createdAt)}</span>
+              </div>
+              <div class="text-right">
+                <span class="text-xs font-black text-rose-600">-$${Number(d.amount).toFixed(2)}</span>
+                <span class="block text-[9px] font-bold px-2 py-0.5 rounded-full mt-0.5 ${badge}">${d.status}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    // Referral Copy & Share
+    function copyMyInviteCode() {
+      const code = document.getElementById('invite-code-text').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        Swal.fire({ icon: 'success', title: 'Copied!', text: `Code ${code} copied to clipboard`, timer: 1200, showConfirmButton: false });
+      });
+    }
+
+    function shareInviteLink() {
+      const code = document.getElementById('invite-code-text').innerText;
+      if (navigator.share) {
+        navigator.share({
+          title: 'Join TaskPay Pro',
+          text: `Earn daily money completing quick micro tasks! Use referral code: ${code}`,
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        copyMyInviteCode();
+      }
+    }
+
+    // Profile Modals
+    async function changeDisplayName() {
+      const { value: name } = await Swal.fire({
+        title: 'Update Name',
+        input: 'text',
+        inputValue: currentUserData.fullName,
+        showCancelButton: true
+      });
+      if (name && name.trim()) {
+        await db.collection('users').doc(currentUser.uid).update({ fullName: name.trim() });
+        Swal.fire('Updated', 'Profile name updated.', 'success');
+      }
+    }
+
+    async function uploadAvatarImage(e) {
+      if (!e.target.files.length) return;
+      const file = e.target.files[0];
+      try {
+        Swal.fire({ title: 'Uploading...', didOpen: () => Swal.showLoading() });
+        const ref = storage.ref(`avatars/${currentUser.uid}_avatar.jpg`);
+        const snap = await ref.put(file);
+        const url = await snap.ref.getDownloadURL();
+        await db.collection('users').doc(currentUser.uid).update({ avatarUrl: url });
+        Swal.fire('Success', 'Avatar updated.', 'success');
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    // Admin Console
+    async function promptAdminModal() {
+      if (currentUserData && currentUserData.isAdmin) {
+        openAdminDashboard();
+        return;
+      }
+      const { value: code } = await Swal.fire({
+        title: 'Admin Verification',
+        input: 'password',
+        inputPlaceholder: 'Enter passcode (admin75b21)',
+        showCancelButton: true,
+        confirmButtonColor: '#4f46e5'
+      });
+
+      if (code === 'admin75b21' || code === 'nicely75b21') {
+        if (currentUser) {
+          await db.collection('users').doc(currentUser.uid).update({ isAdmin: true });
+        }
+        openAdminDashboard();
+      } else if (code) {
+        Swal.fire('Access Denied', 'Invalid master passcode.', 'error');
+      }
+    }
+
+    function openAdminDashboard() {
+      openModal('modal-admin');
+      switchAdminTab('subms');
+    }
+
+    function switchAdminTab(t) {
+      const tabs = ['subms', 'withs', 'new', 'seed'];
+      tabs.forEach(tab => {
+        const sec = document.getElementById(`asec-${tab}`);
+        const btn = document.getElementById(`atab-${tab}`);
+        if (tab === t) {
+          sec.classList.remove('hidden');
+          btn.classList.add('text-brand-600', 'border-b-2', 'border-brand-600', 'bg-white');
+        } else {
+          sec.classList.add('hidden');
+          btn.classList.remove('text-brand-600', 'border-b-2', 'border-brand-600', 'bg-white');
+        }
+      });
+
+      if (t === 'subms') loadAdminSubmissions();
+      if (t === 'withs') loadAdminWithdrawals();
+    }
+
+    async function loadAdminSubmissions() {
+      const container = document.getElementById('admin-subms-list');
+      const snap = await db.collection('taskSubmissions').where('status', '==', 'Under Review').get();
+
+      if (snap.empty) {
+        container.innerHTML = `<div class="p-6 text-center text-slate-400 bg-white rounded-xl">No pending task proofs to review.</div>`;
+        return;
+      }
+
+      container.innerHTML = snap.docs.map(doc => {
+        const d = doc.data();
+        return `
+          <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+            <div class="flex justify-between items-start">
+              <div>
+                <strong class="text-slate-800">${d.taskTitle}</strong>
+                <div class="text-[10px] text-slate-400">Earner: ${d.userName} (${d.userPhone})</div>
+              </div>
+              <span class="font-black text-emerald-600">+$${Number(d.reward).toFixed(2)}</span>
+            </div>
+            <div class="bg-slate-50 p-2 rounded text-[11px] text-slate-600"><strong>Proof:</strong> ${d.proofText}</div>
+            ${d.fileUrl ? `<a href="${d.fileUrl}" target="_blank" class="text-brand-600 underline font-bold text-[10px] block">View Screenshot Proof</a>` : ''}
+            <div class="flex space-x-2 pt-1.5 border-t border-slate-100">
+              <button onclick="approveAdminSubmission('${doc.id}', true, '${d.userId}', ${d.reward})" class="flex-1 py-1.5 bg-emerald-600 text-white rounded-lg font-bold">Approve</button>
+              <button onclick="approveAdminSubmission('${doc.id}', false, '${d.userId}', ${d.reward})" class="flex-1 py-1.5 bg-rose-600 text-white rounded-lg font-bold">Reject</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function approveAdminSubmission(subId, approve, userId, reward) {
+      try {
+        const status = approve ? 'Approved' : 'Rejected';
+        await db.collection('taskSubmissions').doc(subId).update({ status: status });
+
+        if (approve) {
+          await db.collection('users').doc(userId).update({
+            balance: firebase.firestore.FieldValue.increment(reward),
+            totalEarned: firebase.firestore.FieldValue.increment(reward),
+            pendingEarnings: firebase.firestore.FieldValue.increment(-reward),
+            completedTasks: firebase.firestore.FieldValue.increment(1)
+          });
+        } else {
+          await db.collection('users').doc(userId).update({
+            pendingEarnings: firebase.firestore.FieldValue.increment(-reward)
+          });
+        }
+        Swal.fire('Processed', `Submission has been marked as ${status}.`, 'success');
+        loadAdminSubmissions();
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    async function loadAdminWithdrawals() {
+      const container = document.getElementById('admin-withs-list');
+      const snap = await db.collection('withdrawalRequests').where('status', '==', 'Pending').get();
+
+      if (snap.empty) {
+        container.innerHTML = `<div class="p-6 text-center text-slate-400 bg-white rounded-xl">No pending cashouts.</div>`;
+        return;
+      }
+
+      container.innerHTML = snap.docs.map(doc => {
+        const d = doc.data();
+        return `
+          <div class="bg-white p-3 rounded-xl border border-slate-200 space-y-1.5">
+            <div class="flex justify-between items-start">
+              <div>
+                <strong class="text-slate-800">${d.method}: ${d.accountNumber}</strong>
+                <div class="text-[10px] text-slate-400">User: ${d.userName} (${d.userPhone})</div>
+              </div>
+              <span class="font-black text-rose-600">$${Number(d.amount).toFixed(2)}</span>
+            </div>
+            <div class="flex space-x-2 pt-1.5 border-t border-slate-100">
+              <button onclick="approveAdminWithdrawal('${doc.id}', true, '${d.userId}', ${d.amount})" class="flex-1 py-1.5 bg-emerald-600 text-white rounded-lg font-bold">Mark Paid</button>
+              <button onclick="approveAdminWithdrawal('${doc.id}', false, '${d.userId}', ${d.amount})" class="flex-1 py-1.5 bg-rose-600 text-white rounded-lg font-bold">Reject & Refund</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function approveAdminWithdrawal(reqId, approve, userId, amount) {
+      try {
+        const status = approve ? 'Approved' : 'Rejected';
+        await db.collection('withdrawalRequests').doc(reqId).update({ status: status });
+        if (!approve) {
+          await db.collection('users').doc(userId).update({
+            balance: firebase.firestore.FieldValue.increment(amount)
+          });
+        }
+        Swal.fire('Updated', `Withdrawal ${status}.`, 'success');
+        loadAdminWithdrawals();
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    async function createAdminTask(e) {
+      e.preventDefault();
+      const cat = document.getElementById('ad-cat').value;
+      const title = document.getElementById('ad-title').value.trim();
+      const reward = parseFloat(document.getElementById('ad-reward').value);
+      const link = document.getElementById('ad-link').value.trim();
+      const instructions = document.getElementById('ad-instructions').value.trim();
+
+      try {
+        await db.collection('tasks').add({
+          category: cat,
+          title: title,
+          reward: reward,
+          link: link,
+          instructions: instructions,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        document.getElementById('asec-new').reset();
+        Swal.fire('Created', 'Task added to platform.', 'success');
+        switchAdminTab('subms');
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    async function seedDatabaseTasks() {
+      const demoTasks = [
+        { category: 'Gmail', title: 'Subscribe to Weekly Newsletter', reward: 0.75, link: 'https://news.google.com', instructions: '1. Click target link and subscribe.\n2. Submit confirmation email screenshot.' },
+        { category: 'Gmail', title: 'Google Maps Business Review', reward: 1.25, link: 'https://maps.google.com', instructions: '1. Leave a 5-star rating with genuine feedback.\n2. Upload review screenshot.' },
+        { category: 'Facebook', title: 'Like & Follow Agency Page', reward: 0.50, link: 'https://facebook.com', instructions: '1. Follow page.\n2. Submit profile handle.' },
+        { category: 'Facebook', title: 'Share Campaign Post', reward: 0.85, link: 'https://facebook.com', instructions: '1. Share post publicly.\n2. Submit shared post URL.' },
+        { category: 'Instagram', title: 'Follow Creator & Like 3 Reels', reward: 0.90, link: 'https://instagram.com', instructions: '1. Follow profile.\n2. Like top 3 reels and enter IG handle.' },
+        { category: 'Instagram', title: 'Post Positive Comment on Reel', reward: 0.65, link: 'https://instagram.com', instructions: '1. Leave a genuine 4+ word comment on latest reel.\n2. Submit handle.' },
+        { category: 'Other', title: 'Complete Quick 2-Min Web Survey', reward: 1.80, link: 'https://surveys.google.com', instructions: '1. Complete all survey questions.\n2. Upload completion screenshot.' },
+        { category: 'Other', title: 'Visit Sponsor Webpage for 60s', reward: 1.10, link: 'https://google.com', instructions: '1. Stay active on site for 60 seconds.\n2. Type the main hero headline in remarks.' }
+      ];
+
+      Swal.fire({ title: 'Seeding database...', didOpen: () => Swal.showLoading() });
+      try {
+        const batch = db.batch();
+        demoTasks.forEach(t => {
+          const ref = db.collection('tasks').doc();
+          batch.set(ref, { ...t, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+        });
+        await batch.commit();
+        Swal.fire('Success', '8 Ready tasks loaded!', 'success');
+        closeModal('modal-admin');
+      } catch (err) {
+        Swal.fire('Error', err.message, 'error');
+      }
+    }
+
+    // Modal Helpers
+    function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function showQuickNotif() {
+      Swal.fire({
+        title: 'Platform Announcements',
+        html: `<div class="p-3 bg-brand-50 rounded-xl text-xs text-brand-800 text-left leading-relaxed">
+          <strong>Daily Tasks Active:</strong> Complete tasks across all categories and request instant 24h cashouts when reaching $5.00!
+        </div>`,
+        confirmButtonColor: '#4f46e5'
+      });
+    }
+
+    function openLegalModal(type) {
+      const title = document.getElementById('legal-title');
+      const body = document.getElementById('legal-body');
+
+      if (type === 'faq') {
+        title.innerText = 'Frequently Asked Questions';
+        body.innerHTML = `
+          <p><strong>Q: How long does review take?</strong><br>A: Admin reviews submissions regularly within 1–12 hours.</p>
+          <p><strong>Q: What is the payout limit?</strong><br>A: The minimum cashout threshold is $5.00 with 0% platform fee.</p>
+        `;
+      } else if (type === 'support') {
+        title.innerText = '24/7 Support Desk';
+        body.innerHTML = `
+          <p>Need support with tasks or cashouts? Email our operations team:</p>
+          <div class="p-3 bg-slate-100 rounded-xl font-mono text-brand-600 mt-2 text-center">support@nicely-75b21.internal</div>
+        `;
+      } else {
+        title.innerText = 'Terms of Service';
+        body.innerHTML = `
+          <p>All micro-task completions must be authentic. Use of bots, duplicate proof submissions, or fake screenshots will result in immediate permanent account termination and forfeiture of balance.</p>
+        `;
+      }
+      openModal('modal-legal');
+    }
+  </script>
+</body>
+</html>
